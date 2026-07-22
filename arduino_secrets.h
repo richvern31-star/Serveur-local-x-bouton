@@ -1,0 +1,2 @@
+#define SECRET_SSID "BOX"
+#define SECRET_PASS "PASSWORD"
