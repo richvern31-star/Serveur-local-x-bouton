@@ -1,3 +1,4 @@
+// Gestionaire de carte ESP32 par Expressif Systems Ver 3.3.11
 #include <WiFi.h>              // Bibliothèque WiFi standard pour ESP32 (gère la connexion et le serveur)
 #include <ESPmDNS.h>           // Bibliothèque pour gerer un serveur Local
 #include "arduino_secrets.h"   // Fichier séparé contenant le nom du réseau (SSID) et le mot de passe WiFi
@@ -8,22 +9,24 @@ int status = WL_IDLE_STATUS;     // Variable qui mémorise l'état de la connexi
 
 // 🔴 Repere 1
 //⚠️---------------(Adapté a XIAO-ESP32C3)-------------------------------
-/*const byte PINS[] = { 3, 4, 5, 6, 2, 7 };   // Tableau des broches GPIO  de 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21
+// 📌Pour le montage Final penser a programmer l'ESP32 C3 avec USB CDC on Boot sur Disable
+/*const byte PINS[] = { 3, 4, 5, 6, 2, 7, 8, 9 };   // Tableau des broches GPIO  de 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 (❌ A Eviter  0, 20 et 21 )  
 const char* NOM_PANNEAU_CENTRAL = "Serveur Local"; // Nom du panneau affiché sur la page HTML LIGNE ⚫⚪⚫
 const char* MA_CARTE ="XIAO-ESP32C3";// 🟡🟢*/
 //⚠️---------------(Adapté a ESP32C3 Dev Module)-------------------------------
-/*const byte PINS[] = { 1, 3, 4, 5, 6, 7 };   // Tableau des broches GPIO  1, 3, 4, 5, 6, 7, 10  Pin 8 allume la led bleue(❌ NE PAS UTILISER 0, 2 )
+// 📌Pour le montage Final penser a programmer l'ESP32 C3 avec USB CDC on Boot sur Disable
+/*const byte PINS[] = {  1,6,7,8,9,10,20,21 };   // Tableau des broches GPIO   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21  Pin 8 allume la led bleue(❌ A Eviter  0 )  👍
 const char* NOM_PANNEAU_CENTRAL = "Serveur Local"; // Nom du panneau affiché sur la page HTML LIGNE ⚫⚪⚫
 const char* MA_CARTE ="ESP32 C3"; // 🟡🟢*/
 //⚠️---------------(Adapté a ESP32 S3-N16R8 -> ✅ ESP32 S3 Dev Module ----------------------------
-const byte PINS[] = { 2, 9, 10, 14, 21, 38 };   // Tableau broches GPIO libre 1, 2, 9, 10, 11, 12, 13, 14, 21, 38, 47, 48 (❌ NE PAS UTILISER 3, 35, 36, 37, 45, 46)
+const byte PINS[] = {8,97 ,2,3,4,5,7,9};   // Tableau broches GPIO  1 a 48-- 97 led RGB ❌ A Eviter  0,22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37  👍
 const char* NOM_PANNEAU_CENTRAL = "Serveur Local"; // Nom du panneau affiché sur la page HTML LIGNE ⚫⚪⚫
-const char* MA_CARTE ="ESP32 S3-N16R8";// 🟡🟢
+const char* MA_CARTE ="ESP32 S3-N16R8";// 🟡🟢*/
 
 //⚠️---------------(Adapté a ESP32-Wroom-DA Module  -> ✅ ESP-32D---------------------------
-/*const byte PINS[] = { 21, 22, 23, 26, 27, 33 };   // Tableau des broches GPIO libres 4, 5, 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33(❌ NE PAS UTILISER 0, 2, 6, 7, 12, 15 voir  34, 35,
+/*const byte PINS[] = { 18, 19, 20, 21, 22, 23, 24, 25 };   // Tableau broches GPIO 0 a 38 ⚠️ en entrée seul 34, 35, 36, 39 (❌ NE PAS UTILISER  0, 6, 7, 8, 9, 10, 11)
 const char* NOM_PANNEAU_CENTRAL = "Serveur Local"; // Nom du panneau affiché sur la page HTML LIGNE ⚫⚪⚫
-const char* MA_CARTE = "ESP32 D";// 🟡🟢*/
+const char* MA_CARTE = "ESP32-D Wroom-DA Module";// 🟡🟢 */
 
 // Calcule automatiquement le nombre de sorties
 const byte NB_SORTIES = sizeof(PINS) / sizeof(PINS[0]);
@@ -35,8 +38,11 @@ const char* NOMS[] = {
   "Jardin D13",     // Nom affiché pour PINS[2] (broche 13)
   "Portail D14",    // Nom affiché pour PINS[3] (broche 14)
   "Piscine D15",    // Nom affiché pour PINS[4] (broche 15)
-  "Sortie D16"      // Nom affiché pour PINS[5] (broche 16)
-};
+  "Sortie D16",      // Nom affiché pour PINS[5] (broche 16)
+  "Salon D4",       // Nom affiché pour PINS[0] (broche 4)
+  "Cuisine D5"     // Nom affiché pour PINS[1] (broche 5)
+  
+ };
 
 const byte NB_NOMS = sizeof(NOMS) / sizeof(NOMS[0]);   // Calcule le nombre de noms fournis dans NOMS[], pour vérification au démarrage
 //⚠️-------------Nom du serveur Local----------
@@ -67,7 +73,19 @@ String genererCasesHTML();                    // Prototype : construit en une se
 void setup()
 {
   Serial.begin(115200);          // Démarre la liaison série à 115200 bauds pour les messages de débogage
-delay(3000); //⚠️ Initialisation de la liaison série 1s  🔴IMPORTANT 7s pour ESP32-Wroom-DA Module
+
+// Attend que le moniteur série soit ouvert
+  while (!Serial) { ; }
+
+     // Remonte Infos carte
+  Serial.println("\n--- SPÉCIFICATIONS ESP32 ---");
+  Serial.printf("Modèle de puce  : %s\n", ESP.getChipModel());
+  Serial.printf("Nb de Cœurs CPU : %d\n", ESP.getChipCores());
+  Serial.printf("Fréquence CPU   : %d MHz\n", ESP.getCpuFreqMHz());
+  Serial.printf("Fréquence Flash : %d MHz\n", ESP.getFlashChipSpeed() / 1000000); // au lieu de / (1024 * 1024));
+  Serial.printf("Taille Flash    : %d Mo\n", ESP.getFlashChipSize() / 1000000);
+  Serial.printf("Taille PSRAM    : %d Mo\n", ESP.getPsramSize()  / 1000000);
+  Serial.println("----------------------------");
 
 Serial.println("\n=== Configuration Réseau ===");
 
@@ -291,7 +309,7 @@ String genererCasesHTML()
 
     html += "<!-- Case pour la sortie D"; html += p; html += " -->";        // Repère HTML pour cette case
     html += "<div class='case'>";                                           // Ouvre la case de la sortie courante
-    html += "<div class='titre'>"; html += NOMS[i]; html += "</div>";      // OPTION 9 : affiche le nom personnalisé au lieu de "Sortie Dx"
+    html += "<div class='titre'>"; html += NOMS[i]; html += "</div>";      // affiche le nom personnalisé au lieu de "Sortie Dx"
     html += "<div class='etat' id='txtD"; html += p; html += "'>";         // Ouvre le libellé d'état
     html += etat ? "🟢 ALLUMEE" : "🔴 ETEINTE";                             // Affiche le rond et le texte selon l'état actuel
     html += "</div>";                                                       // Ferme le libellé d'état
@@ -483,8 +501,8 @@ body{font-family:Arial,sans-serif;background:#f0f0f0;text-align:center;margin:0;
   client.print("<!-- Bouton affichant l'IP, l'adresse MAC, le nom local et la qualité dynamique via une popup alert() -->");
   client.print("<button class='ip' onclick=\"alert('Serveur local : http://"); // Ouvre le bouton bleu et début du message de la popup
   client.print(HOSTNAME_MDNS); // Nom du serveur local
-  client.print(".local\\nCarte : "); // 🟡🟢
-  client.print(MA_CARTE); // Affiche le nom de la carte utilisée
+  client.print(".local\\nCarte : "); 
+  client.print(MA_CARTE); // 🟡🟢 Affiche le nom de la carte ESP utilisée
   client.print("\\nAdresse IP : "); client.print(WiFi.localIP());// Insère l'adresse IP locale de la carte dans le message
   client.print("\\nAdresse MAC : "); client.print(macStr); // AJOUT MAC : Insère l'adresse MAC formatée dans la popup
   client.print("\\nPuissance : ' + dernierRSSI + ' dBm\\nQualité : ' + derniereQualite + ' %')\">📡 Infos Réseau</button>");  
