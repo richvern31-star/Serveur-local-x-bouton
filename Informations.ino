@@ -48,6 +48,69 @@
 //⚠️---------------(Adapté a ESP32-Dev Module---------------------------
 const byte PINS[] = {4, 16, 17, 18, 19, 21, 22, 23};   // Tableau des broches GPIO libres 4, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33(❌ NE PAS UTILISER 6, 7 )
 
+//------------------------------------------------------------
+GPIO Utilisable
+//------------------------------------------------------------
+
+📌ESP32-C3
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21 — correct.
+
+GPIO 11 à 17 sont réservés à la mémoire flash SPI interne → à ne jamais utiliser (vous les excluez bien).
+GPIO 18 et 19 sont utilisés pour l'USB-JTAG natif ; vous les excluez, ce qui est prudent si vous comptez utiliser le port USB natif en debug/série. Sinon ils restent utilisables.
+GPIO 0 : broche de strapping (mode boot). Vous l'excluez aussi, ce qui est une approche prudente pour un débutant, même si en pratique elle est souvent utilisée (bouton BOOT sur les devkits).
+
+📌ESP32-S3 N16R8 
+Sur la variante N16R8 (16 Mo flash + 8 Mo PSRAM en mode Octal SPI), ce sont les broches GPIO33 à GPIO37 qui sont dédiées à la PSRAM octale (pas seulement 33-34). Donc la liste correcte est :
+
+Ne pas utiliser : 0, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
+
+Détails :
+
+GPIO 22 à 25 : n'existent tout simplement pas sur le chip ESP32-S3 (numérotation sautée).
+GPIO 26 à 32 : réservés à la flash SPI.
+GPIO 33 à 37 : réservés à la PSRAM en mode octal (spécifique aux modules N16R8/N8R8, pas aux modules sans PSRAM octale).
+GPIO 0, 45, 46 : broches de strapping, utilisables mais avec précaution (mode boot / tension flash).
+
+📌ESP32-D WROOM (WROOM-32D)
+
+De 0 à 39, entrée seule 34, 35, 36, 39 , ne pas utiliser 0, 6, 7, 8, 9, 10, 11 ✓ (6-11 = flash SPI intégrée au module).
+
+Quelques nuances à connaître en plus :
+
+GPIO 1 et GPIO 3 : utilisées par l'UART0 (TX/RX programmation et moniteur série). Elles restent utilisables en GPIO générique, mais posent problème si vous avez besoin du port série en même temps.
+GPIO 2 et GPIO 12 : broches de strapping (mode boot / tension flash). Généralement utilisables, mais à éviter pour des usages critiques ou si un état haut/bas au démarrage pourrait perturber le boot.
+//------------------------------------------------------------
+
+Récapitulatif
+
+ESP32-C3
+Catégorie	                                                      GPIO
+Utilisables	                                     🟢  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21
+Réservées flash SPI interne (interdit)	          🔴 11, 12, 13, 14, 15, 16, 17
+USB-JTAG natif (à éviter si USB natif utilisé)	 🟡 18, 19
+Strapping (boot) — Non utilisable                🔴 0
+
+
+ESP32-S3 N16R8 (16 Mo Flash + 8 Mo PSRAM Octal)
+Catégorie	                                                         GPIO
+Utilisables	                                      🟢 1–21, 38–44, 47, 48
+N'existent pas sur le chip	                           22, 23, 24, 25
+Réservées flash SPI	                             🔴 26, 27, 28, 29, 30, 31, 32
+Réservées PSRAM Octal (spécifique N16R8)	        🔴 33, 34, 35, 36, 37
+Strapping (boot) — Non utilisable                 🔴0, 45, 46
+
+
+ESP32-D WROOM-32D
+Catégorie	                                                         GPIO
+Utilisables (bidirectionnel)	                     🟢 2, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33
+Entrée seule	                                    🟡34, 35, 36, 39
+Réservées flash SPI intégrée (interdit)	         🔴6, 7, 8, 9, 10, 11
+UART0 (TX/RX programmation) — conflit possible	   🟡1, 3
+Strapping (boot) — Non utilisable               	🔴0, 2, 12
+//------------------------------------------------------------
+
+
+
 // 🔴 Repere 1
 //------------------------------------------------------------
 // Déclaration des sorties : il suffit de modifier ce tableau
