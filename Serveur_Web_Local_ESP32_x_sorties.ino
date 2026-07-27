@@ -1,5 +1,5 @@
 // Gestionaire de carte ESP32 par Expressif Systems Ver 3.3.11
-#include <WiFi.h>              // Bibliothèque WiFi standard pour ESP32 (gère la connexion et le serveur) test
+#include <WiFi.h>              // Bibliothèque WiFi standard pour ESP32 (gère la connexion et le serveur)
 #include <ESPmDNS.h>           // Bibliothèque pour gerer un serveur Local
 #include "arduino_secrets.h"   // Fichier séparé contenant le nom du réseau (SSID) et le mot de passe WiFi
 
